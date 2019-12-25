@@ -1,22 +1,37 @@
 package com.majorsan.cooreal;
 
+import java.lang.String;
+
 import android.os.Bundle;
+import androidx.annotation.NonNull;
+import android.content.IntentSender;
+import android.location.Location;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.appcompat.widget.AppCompatTextView;
 
+import com.google.android.material.textview.MaterialTextView;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.SettingsClient;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResponse;
 
-import android.view.View;
-import android.view.Menu;
-import android.view.MenuItem;
+import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 
 public class MainActivity extends AppCompatActivity {
-    private AppCompatTextView latitudeOutputLabel, longitudeOutputLabel,
-    altitudeOutputLabel, deviceMovementStatusOutputLabel, deviceVelocityOutputLabel;
+    private String latitude;
+    private String longitude;
+    private String altitude;
+    private String velocity;
+
+    //protected Location lastKnownLocation;
+    protected int REQUEST_CHECK_SETTINGS;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,24 +40,73 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        latitudeOutputLabel = findViewById(R.id.latitudeOutputLabel);
+        final MaterialTextView latitudeOutputLabel = findViewById(R.id.latitudeOutputLabel);
         latitudeOutputLabel.setText("Unknown");
 
-        longitudeOutputLabel = findViewById(R.id.longitudeOutputLabel);
+        final MaterialTextView longitudeOutputLabel = findViewById(R.id.longitudeOutputLabel);
         longitudeOutputLabel.setText("Unknown");
 
-        altitudeOutputLabel = findViewById(R.id.altitudeOutputLabel);
+        final MaterialTextView altitudeOutputLabel = findViewById(R.id.altitudeOutputLabel);
         altitudeOutputLabel.setText("Unknown");
 
-        deviceMovementStatusOutputLabel = findViewById(R.id.deviceMovementStatusOutputLabel);
+        MaterialTextView deviceMovementStatusOutputLabel = findViewById(R.id.deviceMovementStatusOutputLabel);
         deviceMovementStatusOutputLabel.setText("Unknown");
 
-        deviceVelocityOutputLabel = findViewById(R.id.deviceVelocityOutputLabel);
+        MaterialTextView deviceVelocityOutputLabel = findViewById(R.id.deviceVelocityOutputLabel);
         deviceVelocityOutputLabel.setText("Unknown");
-        String latitude = " °N";
-        String longitude = " °E";
-        String altitude = " km";
-        String velocity = " m/s";
+
+        FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        Location lastKnownLocation = getLastKnownLocation(fusedLocationClient);
+        LocationRequest locationRequest = createLocationRequest();
+        Task task = createCheckLocationSettingsTask(locationRequest);
     }
 
+    @NonNull
+    protected LocationRequest createLocationRequest(){
+        LocationRequest locationRequest = LocationRequest.create();
+        locationRequest.setInterval(10000);
+        //locationRequest.setFastestInterval(5000);
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        return locationRequest;
+    }
+
+    @NonNull
+    protected Task createCheckLocationSettingsTask(LocationRequest locationRequest){
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
+                .addLocationRequest(locationRequest);
+        SettingsClient client = LocationServices.getSettingsClient(this);
+        Task<LocationSettingsResponse> task = client.checkLocationSettings(builder.build());
+
+        task.addOnSuccessListener(this, new OnSuccessListener<LocationSettingsResponse>() {
+            @Override
+            public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
+                //All location settings are satisfied. Location requests can be
+                //initialized here
+            }
+        });
+
+        task.addOnFailureListener(this, new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                if(e instanceof ResolvableApiException){
+                    try{
+                        ResolvableApiException resolvable = (ResolvableApiException) e;
+                        resolvable.startResolutionForResult(MainActivity.this, REQUEST_CHECK_SETTINGS);
+                    }catch (IntentSender.SendIntentException sendEx){
+                        //ignore the error
+                    }
+                }
+            }
+        });
+        return task;
+    }
+    protected Location getLastKnownLocation(FusedLocationProviderClient fusedLocationProviderClient){
+        fusedLocationProviderClient.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
+            @Override
+            public void onSuccess(Location location) {
+                Location lastKnownLocation = location;
+            }
+        });
+        return lastKnownLocation;
+    }
 }
