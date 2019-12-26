@@ -1,5 +1,8 @@
 package com.majorsan.cooreal;
 
+import java.lang.Math;
+import java.text.DecimalFormat;
+
 import android.os.Bundle;
 import android.os.Looper;
 import androidx.annotation.NonNull;
@@ -68,50 +71,41 @@ public class MainActivity extends AppCompatActivity {
             public void onSuccess(Location location) {
                 if(location != null){
                     mCurrentLocation = location;
+                    boolean deviceMoving = false;
                     latitude = Double.toString(mCurrentLocation.getLatitude()) + " °N";
                     longitude = Double.toString(mCurrentLocation.getLongitude()) + " °E";
-                    altitude = Double.toString(mCurrentLocation.getAltitude()) + " m";
-                    velocity = Double.toString(mCurrentLocation.getSpeed()) + " m/s";
-                    if(mCurrentLocation.hasSpeed()){
-                        velocity = Double.toString(mCurrentLocation.getSpeed()) + " m/s";
+                    altitude = Double.toString(Math.round(mCurrentLocation.getAltitude())) + " m";
+                    velocity = "0 m/s";
+                    if(mCurrentLocation.getSpeed()>=1.0){
+                        velocity = Double.toString(Math.round(mCurrentLocation.getSpeed())) + "m/s";
+                        deviceMoving = true;
+                        locationRequest.setFastestInterval(1000);
                     }
+                    updateUI(latitude, longitude, altitude, deviceMoving, velocity);
                 }
-                updateUI(latitude, longitude, altitude, mCurrentLocation.hasSpeed(), velocity);
             }
         });
 
-        /*try {
-        String latitude = Double.toString(mCurrentLocation.getLatitude()) + " °N";
-        String longitude = Double.toString(mCurrentLocation.getLongitude()) + " °E";
-        String altitude = Double.toString(mCurrentLocation.getAltitude()) + " m";
-        latitudeOutputLabel.setText(latitude);
-        longitudeOutputLabel.setText(longitude);
-        altitudeOutputLabel.setText(altitude);
-        if(mCurrentLocation.hasSpeed()){
-            deviceMovementStatusOutputLabel.setText("Yes");
-            String velocity = Double.toString(mCurrentLocation.getSpeed()) + " m/s";
-            deviceVelocityOutputLabel.setText(velocity);
-        }
-        }catch (NullPointerException e){
-            Toast.makeText(getApplicationContext(),  "No Location", Toast.LENGTH_SHORT).show();
-        }*/
         locationRequest = createLocationRequest();
         Task task = createCheckLocationSettingsTask(locationRequest);
         locationCallback = new LocationCallback(){
             @Override
             public void onLocationResult(LocationResult locationResult){
+                boolean deviceMoving = false;
                 if(locationResult == null){
                     return;
                 }
                 for(Location location: locationResult.getLocations()){
                     latitude = Double.toString(location.getLatitude()) + " °N";
                     longitude = Double.toString(location.getLongitude()) + " °E";
-                    altitude = Double.toString(location.getAltitude()) + " m";
-                    velocity = Double.toString(mCurrentLocation.getSpeed()) + " m/s";
-                    if(mCurrentLocation.hasSpeed()){
-                        velocity = Double.toString(mCurrentLocation.getSpeed()) + " m/s";
+                    altitude = Double.toString(Math.round(location.getAltitude())) + " m";
+                    velocity = "0 m/s";
+                    if(mCurrentLocation.getSpeed()>=1.0){
+                        velocity = Double.toString(Math.round(location.getSpeed())) + " m/s";
+                        deviceMoving = true;
+                        locationRequest.setFastestInterval(1000);
                     }
-                    updateUI(latitude, longitude, altitude, mCurrentLocation.hasSpeed(), velocity);
+                    updateUI(latitude, longitude, altitude, deviceMoving, velocity);
                 }
             }
         };
@@ -122,7 +116,6 @@ public class MainActivity extends AppCompatActivity {
     protected LocationRequest createLocationRequest(){
         LocationRequest locationRequest = LocationRequest.create();
         locationRequest.setInterval(10000);
-        //locationRequest.setFastestInterval(5000);
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         return locationRequest;
     }
