@@ -1,11 +1,12 @@
 package com.majorsan.cooreal;
 
-import java.lang.String;
+
 
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import android.content.IntentSender;
 import android.location.Location;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -25,12 +26,8 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 
 public class MainActivity extends AppCompatActivity {
-    private String latitude;
-    private String longitude;
-    private String altitude;
-    private String velocity;
 
-    //protected Location lastKnownLocation;
+    protected Location mCurrentLocation;
     protected int REQUEST_CHECK_SETTINGS;
 
     @Override
@@ -49,14 +46,48 @@ public class MainActivity extends AppCompatActivity {
         final MaterialTextView altitudeOutputLabel = findViewById(R.id.altitudeOutputLabel);
         altitudeOutputLabel.setText("Unknown");
 
-        MaterialTextView deviceMovementStatusOutputLabel = findViewById(R.id.deviceMovementStatusOutputLabel);
+        final MaterialTextView deviceMovementStatusOutputLabel = findViewById(R.id.deviceMovementStatusOutputLabel);
         deviceMovementStatusOutputLabel.setText("Unknown");
 
-        MaterialTextView deviceVelocityOutputLabel = findViewById(R.id.deviceVelocityOutputLabel);
+        final MaterialTextView deviceVelocityOutputLabel = findViewById(R.id.deviceVelocityOutputLabel);
         deviceVelocityOutputLabel.setText("Unknown");
 
         FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        Location lastKnownLocation = getLastKnownLocation(fusedLocationClient);
+        fusedLocationClient.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
+            @Override
+            public void onSuccess(Location location) {
+                if(location != null){
+                    mCurrentLocation = location;
+                    String latitude = Double.toString(mCurrentLocation.getLatitude()) + " °N";
+                    String longitude = Double.toString(mCurrentLocation.getLongitude()) + " °E";
+                    String altitude = Double.toString(mCurrentLocation.getAltitude()) + " m";
+                    latitudeOutputLabel.setText(latitude);
+                    longitudeOutputLabel.setText(longitude);
+                    altitudeOutputLabel.setText(altitude);
+                    if(mCurrentLocation.hasSpeed()){
+                        deviceMovementStatusOutputLabel.setText("Yes");
+                        String velocity = Double.toString(mCurrentLocation.getSpeed()) + " m/s";
+                        deviceVelocityOutputLabel.setText(velocity);
+                    }
+                }
+            }
+        });
+
+        /*try {
+        String latitude = Double.toString(mCurrentLocation.getLatitude()) + " °N";
+        String longitude = Double.toString(mCurrentLocation.getLongitude()) + " °E";
+        String altitude = Double.toString(mCurrentLocation.getAltitude()) + " m";
+        latitudeOutputLabel.setText(latitude);
+        longitudeOutputLabel.setText(longitude);
+        altitudeOutputLabel.setText(altitude);
+        if(mCurrentLocation.hasSpeed()){
+            deviceMovementStatusOutputLabel.setText("Yes");
+            String velocity = Double.toString(mCurrentLocation.getSpeed()) + " m/s";
+            deviceVelocityOutputLabel.setText(velocity);
+        }
+        }catch (NullPointerException e){
+            Toast.makeText(getApplicationContext(),  "No Location", Toast.LENGTH_SHORT).show();
+        }*/
         LocationRequest locationRequest = createLocationRequest();
         Task task = createCheckLocationSettingsTask(locationRequest);
     }
@@ -99,14 +130,5 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         return task;
-    }
-    protected Location getLastKnownLocation(FusedLocationProviderClient fusedLocationProviderClient){
-        fusedLocationProviderClient.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
-            @Override
-            public void onSuccess(Location location) {
-                Location lastKnownLocation = location;
-            }
-        });
-        return lastKnownLocation;
     }
 }
