@@ -1,12 +1,10 @@
 package com.majorsan.cooreal;
 
-
-
 import android.os.Bundle;
+import android.os.Looper;
 import androidx.annotation.NonNull;
 import android.content.IntentSender;
 import android.location.Location;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -17,6 +15,8 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.SettingsClient;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResponse;
 
@@ -27,8 +27,22 @@ import com.google.android.gms.tasks.OnSuccessListener;
 
 public class MainActivity extends AppCompatActivity {
 
-    protected Location mCurrentLocation;
+    private Location mCurrentLocation;
+    private FusedLocationProviderClient fusedLocationClient;
+    private LocationRequest locationRequest;
+    private LocationCallback locationCallback;
     protected int REQUEST_CHECK_SETTINGS;
+
+    private String latitude;
+    private String longitude;
+    private String altitude;
+    private String velocity;
+
+    private MaterialTextView latitudeOutputLabel;
+    private MaterialTextView longitudeOutputLabel;
+    private MaterialTextView altitudeOutputLabel;
+    private MaterialTextView deviceMovementStatusOutputLabel;
+    private MaterialTextView deviceVelocityOutputLabel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,39 +51,32 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        final MaterialTextView latitudeOutputLabel = findViewById(R.id.latitudeOutputLabel);
+        latitudeOutputLabel = findViewById(R.id.latitudeOutputLabel);
         latitudeOutputLabel.setText("Unknown");
-
-        final MaterialTextView longitudeOutputLabel = findViewById(R.id.longitudeOutputLabel);
+        longitudeOutputLabel = findViewById(R.id.longitudeOutputLabel);
         longitudeOutputLabel.setText("Unknown");
-
-        final MaterialTextView altitudeOutputLabel = findViewById(R.id.altitudeOutputLabel);
+        altitudeOutputLabel = findViewById(R.id.altitudeOutputLabel);
         altitudeOutputLabel.setText("Unknown");
-
-        final MaterialTextView deviceMovementStatusOutputLabel = findViewById(R.id.deviceMovementStatusOutputLabel);
+        deviceMovementStatusOutputLabel = findViewById(R.id.deviceMovementStatusOutputLabel);
         deviceMovementStatusOutputLabel.setText("Unknown");
-
-        final MaterialTextView deviceVelocityOutputLabel = findViewById(R.id.deviceVelocityOutputLabel);
+        deviceVelocityOutputLabel = findViewById(R.id.deviceVelocityOutputLabel);
         deviceVelocityOutputLabel.setText("Unknown");
 
-        FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         fusedLocationClient.getLastLocation().addOnSuccessListener(this, new OnSuccessListener<Location>() {
             @Override
             public void onSuccess(Location location) {
                 if(location != null){
                     mCurrentLocation = location;
-                    String latitude = Double.toString(mCurrentLocation.getLatitude()) + " °N";
-                    String longitude = Double.toString(mCurrentLocation.getLongitude()) + " °E";
-                    String altitude = Double.toString(mCurrentLocation.getAltitude()) + " m";
-                    latitudeOutputLabel.setText(latitude);
-                    longitudeOutputLabel.setText(longitude);
-                    altitudeOutputLabel.setText(altitude);
+                    latitude = Double.toString(mCurrentLocation.getLatitude()) + " °N";
+                    longitude = Double.toString(mCurrentLocation.getLongitude()) + " °E";
+                    altitude = Double.toString(mCurrentLocation.getAltitude()) + " m";
+                    velocity = Double.toString(mCurrentLocation.getSpeed()) + " m/s";
                     if(mCurrentLocation.hasSpeed()){
-                        deviceMovementStatusOutputLabel.setText("Yes");
-                        String velocity = Double.toString(mCurrentLocation.getSpeed()) + " m/s";
-                        deviceVelocityOutputLabel.setText(velocity);
+                        velocity = Double.toString(mCurrentLocation.getSpeed()) + " m/s";
                     }
                 }
+                updateUI(latitude, longitude, altitude, mCurrentLocation.hasSpeed(), velocity);
             }
         });
 
@@ -88,8 +95,27 @@ public class MainActivity extends AppCompatActivity {
         }catch (NullPointerException e){
             Toast.makeText(getApplicationContext(),  "No Location", Toast.LENGTH_SHORT).show();
         }*/
-        LocationRequest locationRequest = createLocationRequest();
+        locationRequest = createLocationRequest();
         Task task = createCheckLocationSettingsTask(locationRequest);
+        locationCallback = new LocationCallback(){
+            @Override
+            public void onLocationResult(LocationResult locationResult){
+                if(locationResult == null){
+                    return;
+                }
+                for(Location location: locationResult.getLocations()){
+                    latitude = Double.toString(location.getLatitude()) + " °N";
+                    longitude = Double.toString(location.getLongitude()) + " °E";
+                    altitude = Double.toString(location.getAltitude()) + " m";
+                    velocity = Double.toString(mCurrentLocation.getSpeed()) + " m/s";
+                    if(mCurrentLocation.hasSpeed()){
+                        velocity = Double.toString(mCurrentLocation.getSpeed()) + " m/s";
+                    }
+                    updateUI(latitude, longitude, altitude, mCurrentLocation.hasSpeed(), velocity);
+                }
+            }
+        };
+        startLocationUpdates();
     }
 
     @NonNull
@@ -130,5 +156,21 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         return task;
+    }
+
+    private void startLocationUpdates(){
+        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+    }
+
+    private void updateUI(String latitudeResult, String longitudeResult, String altitudeResult,
+                          Boolean deviceMoving, String velocityResult){
+        latitudeOutputLabel.setText(latitudeResult);
+        longitudeOutputLabel.setText(longitudeResult);
+        altitudeOutputLabel.setText(altitudeResult);
+        if(deviceMoving)
+            deviceMovementStatusOutputLabel.setText("Yes");
+        else
+            deviceMovementStatusOutputLabel.setText("No");
+        deviceVelocityOutputLabel.setText(velocityResult);
     }
 }
