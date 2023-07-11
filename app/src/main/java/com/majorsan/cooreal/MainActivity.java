@@ -1,19 +1,17 @@
 package com.majorsan.cooreal;
 
 import java.lang.Math;
-import java.text.DecimalFormat;
 
 import android.os.Bundle;
 import android.os.Looper;
-import androidx.annotation.NonNull;
 import android.content.IntentSender;
 import android.location.Location;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.annotation.NonNull;
 
-import com.google.android.material.textview.MaterialTextView;
-
+import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationRequest;
@@ -22,11 +20,11 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResponse;
-
-import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+
+import com.google.android.material.textview.MaterialTextView;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -40,12 +38,18 @@ public class MainActivity extends AppCompatActivity {
     private String longitude;
     private String altitude;
     private String velocity;
+    private String accuracy;
+    private String bearing;
+    private String accuracyMeterPerSec;
 
     private MaterialTextView latitudeOutputLabel;
     private MaterialTextView longitudeOutputLabel;
     private MaterialTextView altitudeOutputLabel;
     private MaterialTextView deviceMovementStatusOutputLabel;
     private MaterialTextView deviceVelocityOutputLabel;
+    private MaterialTextView accuracyOutputLabel;
+    private MaterialTextView bearingOutputLabel;
+    private MaterialTextView accuracyMeterPerSecOutputLabel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +80,10 @@ public class MainActivity extends AppCompatActivity {
                     longitude = Double.toString(mCurrentLocation.getLongitude()) + " °E";
                     altitude = Double.toString(Math.round(mCurrentLocation.getAltitude())) + " m";
                     velocity = "0 m/s";
+                    accuracy = Double.toString(Math.round(location.getAccuracy()));
+                    bearing = Double.toString(Math.round(location.getBearing()));
+                    accuracyMeterPerSec = Double.toString(Math.round(location.getSpeedAccuracyMetersPerSecond())) + "m/s";
+
                     if(mCurrentLocation.getSpeed()>=1.0){
                         velocity = Double.toString(Math.round(mCurrentLocation.getSpeed())) + "m/s";
                         deviceMoving = true;
@@ -100,6 +108,10 @@ public class MainActivity extends AppCompatActivity {
                     longitude = Double.toString(location.getLongitude()) + " °E";
                     altitude = Double.toString(Math.round(location.getAltitude())) + " m";
                     velocity = "0 m/s";
+                    accuracy = Double.toString(Math.round(location.getAccuracy()));
+                    bearing = Double.toString(Math.round(location.getBearing()));
+                    accuracyMeterPerSec = Double.toString(Math.round(location.getSpeedAccuracyMetersPerSecond())) + "m/s";
+
                     if(mCurrentLocation.getSpeed()>=1.0){
                         velocity = Double.toString(Math.round(location.getSpeed())) + " m/s";
                         deviceMoving = true;
